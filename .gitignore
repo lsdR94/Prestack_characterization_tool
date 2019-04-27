@@ -1,0 +1,8 @@
+# To prevent committing changes to the development tools configuration files
+# create a .gitignore_global file at the User folder containing the location to these files
+# and then run
+# git config --global core.excludesfile '~/.gitignore_global'
+# to tell git to exclude these files from version control.
+# In this manner we don't pollute the shared .gitignore file
+
+notebooks/.ipynb_checkpoints/
