@@ -7,7 +7,7 @@ import segyio
 def read_segy_xy(path):
     """
     Return pandas dataframe with segy coordinates
-    (tracf, utm_x, utm_y, cdp_inline, cdp_xline)
+    (tracf, cdp_inline, cdp_xline, utm_x, utm_y,)
 
     Input:
     path: File path
@@ -30,3 +30,8 @@ def read_segy_xy(path):
                               np.where(xy_scalar > 0, xy['utmy'] * xy_scalar, xy['utmy'] / abs(xy_scalar)))
 
     return xy
+
+
+## Is there a way to paralelize this function to work with big segy files?
+## How can we guard against segy files that are not standard?
+## Why does every trace has a coordinate scalar if all are referenced to the same CRS?
