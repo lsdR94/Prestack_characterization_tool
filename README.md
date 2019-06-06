@@ -1,4 +1,11 @@
-# TEG
-# POSEIDON 3D
 
-# TEG: AVO- luisdaniel Rivera.
+# TEG: "Development of a computational tool for the characterization of reservoirs using pre-stacked seismic"
+
+# Author: 		luisdaniel Rivera.
+# 	  		luisdarc@gmail.com
+# 		    
+# Industrial tutor:	Rafael Pinto	 
+# Academic tutor :	Mariano Arnaiz
+
+
+
