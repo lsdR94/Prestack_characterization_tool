@@ -5,7 +5,7 @@ import pandas as pd
 import os
 
 # Default location
-seismic_path = "../data/NS2900-2200_3000-2300.sgy" #POSEIDON 3D
+seismic_path = "../data/NS2950-2180_3000-2230.sgy" #POSEIDON 3D
 wells_path = "../data/wells_info.txt"
 
 # 1) test_path_validation
@@ -75,7 +75,7 @@ def test_cube_file_validation_false_3():
 # 7) test_cube_data_organization
 def test_cube_data_organization_columns(): 
     cube_dataframe = utils.cube_data_organization(seismic_path)
-    assert (cube_dataframe.shape == (10201, 5))
+    assert (cube_dataframe.shape == (2601, 5))
 def test_cube_data_organization_tracf(): 
     cube_dataframe = utils.cube_data_organization(seismic_path)
     assert (cube_dataframe['tracf'][0]== 1)

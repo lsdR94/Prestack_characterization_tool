@@ -10,7 +10,7 @@ from bokeh.models import HoverTool
 hv.extension('bokeh')
 
 # PATHS
-seismic_path = '../data/NS2900-2200_3000-2300.sgy'
+seismic_path = '../data/NS2950-2180_3000-2230.sgy'
 wells_path = '../data/wells_info.txt'
 seismic_survey = 'POSEIDON 3D'
 
