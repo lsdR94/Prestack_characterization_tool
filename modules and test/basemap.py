@@ -57,116 +57,125 @@ def step_validation(input_value, max_value):
         else:
             return (step)
 
-# 2) step_compute(cube_dataframe)
-def step_compute(cube_dataframe):
+# 2) step_compute(cube_dataframe) [Refactored]
+def step_computation(cube_dataframe, str ):
     
     """
     
-    A function that allows the user to introduce the step between the elements of the Seismic Survey.
+    A function that allows the user to choose the step of a DataFrame's key (columns names).
     
     Argument:
-    cube_dataframe : (Pandas)DataFrame. Source of the values to compute the range of each element to plot:
-                      traces, inline and crossline range.
+    cube_dataframe : (Pandas)DataFrame. Source of the input keys and the range of values than can be chosen as
+                      the step.
+    
+    str : String. Name of the DataFrame's column to compute the step.
     
     Return:
-    steps : List. A list of integer values to be used as the step by the basemap function.
+    item_step : Integer. An integer to be used as the step by the basemap function.
     
     """
-    # Shield for the first step: t_step (trace_step)
-    tracf_min = int(cube_dataframe['tracf'].iloc[0])
-    tracf_max = int(cube_dataframe['tracf'].iloc[-1])
+    # Computation of boundaries of the str range   
+    step_min = int(cube_dataframe[str].iloc[0])
+    step_max = int(cube_dataframe[str].iloc[-1])
+        
+    # While loop to shield the input step 
     while True:
-        trace_step = step_validation(input(f'Select a step from the trace range [{int(tracf_min/tracf_min)},{tracf_max - tracf_min}] to plot the traces: '),tracf_max)
-        if trace_step == False:
-            print(" ")
-        else: 
-            print(" ")
-            break
-    
-    # Shield for the second step: i_step (inline_step)
-    iline_min = int(cube_dataframe['cdp_iline'].iloc[0])
-    iline_max = int(cube_dataframe['cdp_iline'].iloc[-1])
-    while True:
-        iline_step = step_validation(input(f'Select a step from the inline range [1,{iline_max - iline_min}] to plot the inlines: '),iline_max - iline_min)
-        if iline_step == False:
-            print(" ")
-        else: 
-            print(" ")
-            break
-    
-    # Shield for the third step: x_step (crossline_step)
-    xline_min = int(cube_dataframe['cdp_xline'].iloc[0])
-    xline_max = int(cube_dataframe['cdp_xline'].iloc[-1])
-    while True:
-        xline_step = step_validation(input(f'Select a step from the crossline range [1,{xline_max - xline_min}] to plot the crosslines: '),xline_max - xline_min)
-        if xline_step == False:
+        item_step = step_validation(input(f" Select a step from the {str} range [{int(step_min/step_min)},{step_max - step_min}] to plot the traces: "),step_max)
+        if item_step == False:
             print(" ")
         else: 
             print(" ")
             break
             
-    steps = [int(trace_step),int(iline_step), int(xline_step)]
-   
-    return (steps)
-
-# 2.1) to_step_compute_without_inputs(cube_dataframe, nput)
-def to_test_step_compute_without_inputs(cube_dataframe,nput):
+    return (item_step)
+# 2.1) step_computation_without_inputs(cube_dataframe, str, nput)
+def step_computation_without_inputs(cube_dataframe, str, nput):
     
     """
     
-    A function that allows the user to introduce the step between the elements of the Seismic Survey.
-    
-    Argument:
-    cube_dataframe : (Pandas)DataFrame. Source of the values to compute the range of each element to plot:
-                      traces, inline and crossline range.
-    
-    Return:
-    steps : List. A list of integer values to be used as the step by the basemap function.
+    TESTING FUNCTION: STEP_COMPUTE WITHOUT INPUT METHODS
     
     """
 
-    # Shield for the first step: t_step (trace_step)
-    tracf_min = int(cube_dataframe['tracf'].iloc[0])
-    tracf_max = int(cube_dataframe['tracf'].iloc[-1])
-    
+    # Computation of boundaries of the str range   
+    step_min = int(cube_dataframe[str].iloc[0])
+    step_max = int(cube_dataframe[str].iloc[-1])
+        
+    # While loop to shield the input step 
     while True:
-        trace_step = step_validation(nput, tracf_max)
-        if trace_step == False:
-            return (False)
-            print(" ")
-        else: 
+        item_step = step_validation(nput,step_max)
+        if item_step == False:
             print(" ")
             break
-    
-    # Shield for the second step: i_step (inline_step)
-    iline_min = int(cube_dataframe['cdp_iline'].iloc[0])
-    iline_max = int(cube_dataframe['cdp_iline'].iloc[-1])
-    while True:
-        iline_step = step_validation(nput, iline_max - iline_min)
-        if iline_step == False:
-            return (False)
-            print(" ")
-        else: 
-            print(" ")
-            break
-    
-    # Shield for the third step: x_step (crossline_step)
-    xline_min = int(cube_dataframe['cdp_xline'].iloc[0])
-    xline_max = int(cube_dataframe['cdp_xline'].iloc[-1])
-    while True:
-        xline_step = step_validation(nput, xline_max - xline_min)
-        if xline_step == False:
-            return (False)
-            print(" ")
         else: 
             print(" ")
             break
             
-    steps = [int(trace_step),int(iline_step), int(xline_step)]
-   
-    return (steps)
+    return (item_step)
 
-# 3) polygon_building(cube_dataframe) 
+# 3) step_selection(cube_dataframe, str ) [Refactored]
+def step_selection(cube_dataframe, str ):
+    
+    """
+    
+    A function that validates the string argument of the step_computation function.
+    
+    Argument:
+    cube_dataframe : (Pandas)DataFrame. Source of the input keys and the range of values than can be chosen as
+                      the step.
+    
+    str : String. Name of the DataFrame's column to compute the step.
+    
+    Return:
+    step : Integer. An integer to be used as the step by the basemap function.
+    
+    """
+    
+    # if the given string is NOT one of the columns do:
+    if str not in cube_dataframe.keys():  
+        
+        # while loop to shield the input
+        while True:
+            str = input(f" Introduce a proper column name: ")
+            
+            # Again: if is not one of the keys: start the cycle 
+            if str not in cube_dataframe.keys(): 
+                print("  ")
+            
+            # If not, go computing the step
+            else:
+                step = step_computation(cube_dataframe, str )
+                return(step)
+                break
+            
+    # If the initial argument is an actual column name, then start the calculations
+    else:
+        step = step_computation(cube_dataframe, str )
+        return (step)
+
+# 3.1) step_selection_without_inputs
+def step_selection_without_inputs(cube_dataframe, str, nput):
+        
+    """
+    
+    TESTING FUNCTION: STEP_SELECTION WITHOUT INPUT METHODS
+    
+    """
+    
+    # if the given string is NOT one of the columns do:
+    if str not in cube_dataframe.keys():  
+        
+        # while loop to shield the input          
+        return (False)
+            
+    # If not, go computing the step
+            
+    # If the initial argument is an actual column name, then start the calculations
+    else:
+        step = step_computation_without_inputs(cube_dataframe, str, nput)
+        return (step)
+
+# 4) polygon_building(cube_dataframe) 
 def polygon_building(cube_dataframe):
     
     """
@@ -201,7 +210,7 @@ def polygon_building(cube_dataframe):
     
     return (polygon)
 
-# 4) wells_plot(wells_dataframe)
+# 5) wells_plot(wells_dataframe)
 def wells_plot(wells_dataframe):
     
     """
@@ -232,7 +241,7 @@ def wells_plot(wells_dataframe):
     
     return (wells)
 
-# 5) polygon_plot(cube_dataframe)
+# 6) polygon_plot(cube_dataframe)
 def polygon_plot(cube_dataframe):
     
     """
@@ -256,7 +265,7 @@ def polygon_plot(cube_dataframe):
     
     return (pol)
 
-# 6) trace_plot(cube_dataframe, t_step)
+# 7) trace_plot(cube_dataframe, t_step)
 def trace_plot(cube_dataframe, t_step):
     
     """
@@ -288,7 +297,7 @@ def trace_plot(cube_dataframe, t_step):
     
     return (traces)
 
-# 7) inline_plot(cube_dataframe, i_step)
+# 8) inline_plot(cube_dataframe, i_step)
 def inline_plot(cube_dataframe, i_step):
     
     """
@@ -330,7 +339,7 @@ def inline_plot(cube_dataframe, i_step):
         
     return (inline)
 
-# 8) xline_plot(cube_dataframe, x_step) 
+# 9) xline_plot(cube_dataframe, x_step) 
 def xline_plot(cube_dataframe, x_step):
     
     """
@@ -371,9 +380,9 @@ def xline_plot(cube_dataframe, x_step):
     
     return (xline)
 
-# 9) basemap(cube_dataframe, wells_dataframe)
+# 10) basemap(cube_dataframe, wells_dataframe)
 def basemap(cube_dataframe, wells_dataframe):
-    
+      
     """
     
     A function to plot the basic information of a Seismic Survey. 
@@ -400,9 +409,7 @@ def basemap(cube_dataframe, wells_dataframe):
     # Making the cube argument less stressful to read
     df = cube_dataframe
     
-    # Computing the step list to extract the step for traces and lines
-    step = step_compute(cube_dataframe)
-    t_step, i_step, x_step = step[0], step[1], step[2]
+    # Computing the step in each plot line **
     
     # First element of the Basemap: wells
     wells = wells_plot(wells_dataframe)
@@ -411,13 +418,13 @@ def basemap(cube_dataframe, wells_dataframe):
     polygon = polygon_plot(cube_dataframe)
     
     # Third element of the Basemap: traces
-    traces = trace_plot(cube_dataframe, t_step)
+    traces = trace_plot(cube_dataframe, step_selection(cube_dataframe, "tracf", ))
     
     # Fourth element of the Basemap: inlines
-    inlines = inline_plot(cube_dataframe, i_step)
+    inlines = inline_plot(cube_dataframe, step_selection(cube_dataframe, "cdp_iline" ))
     
     # Fith element of the Basemap: crosslines
-    crosslines = xline_plot(cube_dataframe, x_step)
+    crosslines = xline_plot(cube_dataframe, step_selection(cube_dataframe, "cdp_xline" ))
          
     # Overlaying the elements. Setting the basemap element
     basemap = wells * polygon * traces * inlines * crosslines
@@ -432,38 +439,19 @@ def basemap(cube_dataframe, wells_dataframe):
     
     return (basemap)
 
-#9.1) basemap(cube_dataframe, wells_dataframe,steps
-def to_test_basemap_without_inputs(cube_dataframe, wells_dataframe,steps):
+# 10.1) basemap_without_inputs (cube_dataframe, wells_dataframe,steps
+def basemap_without_inputs(cube_dataframe, wells_dataframe,nput):
        
     """
     
-    A function to plot the basic information of a Seismic Survey. 
-    
-    Argument:
-    cube_dataframe : (Pandas) DataFrame. Source of the Seismic Survey coordinates for all traces
-                      and lines within the input file. Default: trace_dataframe.
-    
-    wells_dataframe : (Pandas) DataFrame. Source of the wells information. 
-                       Default: wells_dataframe
-    
-    Note:
-    A new DataFrame is made in order to solve the issue related to the inability of the 
-    Holoviews Scatter element to use loops for a step implementation.
-    
-    Return:
-    basemap : Holviews element [Overlay]. The output is the combination of the seismic survey 
-              polygon, the seismic traces, the lines along the survey and the Wells inside of it. A tool 
-              to show the coordinates and the identification of each element have been implemented to the 
-              plot (Hover Tool)
+    TESTING FUNCTION: BASEMAP WITHOUT INPUT METHODS
     
     """
     
     # Making the cube argument less stressful to read
     df = cube_dataframe
     
-    # Computing the step list to extract the step for traces and lines
-    #step = step_compute(cube_dataframe)
-    #t_step, i_step, x_step = step[0], step[1], step[2]
+    # Computing the step in each plot line **
     
     # First element of the Basemap: wells
     wells = wells_plot(wells_dataframe)
@@ -472,13 +460,13 @@ def to_test_basemap_without_inputs(cube_dataframe, wells_dataframe,steps):
     polygon = polygon_plot(cube_dataframe)
     
     # Third element of the Basemap: traces
-    traces = trace_plot(cube_dataframe, steps)
+    traces = trace_plot(cube_dataframe, step_selection_without_inputs(cube_dataframe, "tracf" , nput))
     
     # Fourth element of the Basemap: inlines
-    inlines = inline_plot(cube_dataframe, steps)
+    inlines = inline_plot(cube_dataframe, step_selection_without_inputs(cube_dataframe, "cdp_iline", nput))
     
     # Fith element of the Basemap: crosslines
-    crosslines = xline_plot(cube_dataframe, steps)
+    crosslines = xline_plot(cube_dataframe, step_selection_without_inputs(cube_dataframe, "cdp_xline", nput))
          
     # Overlaying the elements. Setting the basemap element
     basemap = wells * polygon * traces * inlines * crosslines
@@ -493,7 +481,7 @@ def to_test_basemap_without_inputs(cube_dataframe, wells_dataframe,steps):
     
     return (basemap)
 
-# 10)number_of_lines_for_window()
+# 11)number_of_lines_for_window()
 def number_of_lines_for_window():
     
     """
@@ -519,20 +507,13 @@ def number_of_lines_for_window():
 
     return (val1)
 
-# 10.1) to_test_number_of_lines_for_window()
-def to_test_number_of_lines_for_window(nput):
+# 11.1) number_of_lines_for_window_without_inputs()
+def number_of_lines_for_window_without_inputs(nput):
         
     """
     
-    A function that allows the user to select a dimension to build a window from a DataFrame. 
-    It's part of the arguments of the window_selection_dataframe function.
-    
-    Arguments:
-    No argument. Instead the function allows the user to choose it through an input method.
-     
-    Return:
-    n_lines : Integer. The amount of lines to be taken in consideration by the 
-              window_selection_dataframe function.
+    TESTING FUNCTION: NUMBER OF LINES FOR WINDOW WITHOUT 
+    INPUT METHODS
        
     """
     while True:
@@ -547,7 +528,7 @@ def to_test_number_of_lines_for_window(nput):
 
     return (val1)
 
-# 11) window_selection_dataframe(inline, crossline, dataframe)
+# 12) window_selection_dataframe(inline, crossline, dataframe)
 def window_selection_dataframe(inline, crossline, dataframe):
     
     """
@@ -611,33 +592,13 @@ def window_selection_dataframe(inline, crossline, dataframe):
     
     return (cropped_dataframe)
 
-# 11.1) window_selection_dataframe_without_inputs(inline, crossline, dataframe)
-def to_test_window_selection_dataframe_without_inputs(inline, crossline, dataframe, number_of_lines):
+# 12.1) window_selection_dataframe_without_inputs(inline, crossline, dataframe)
+def window_selection_dataframe_without_inputs(inline, crossline, dataframe, number_of_lines):
     
     """
     
-    A function to build a window around the intersection of the given inline and crossline 
-    coordinates. The amount of data selected depends on the number of lines (in both seismic 
-    directions) choosen through and input method (Number_of_lines_for_window function)
-    
-    Argument:
-    inline : Integer. Inline coordinate set as datum to build the window.
-    
-    crossline: Integer. Crossline coordinate set as datum to build the window.
-    
-    dataframe: (Pandas) DataFrame. Source of the coordinates to be computed as the window's limits.
-
-    
-    Example:
-    If the lines cordinates are: (inline,crossline) = (2900,2200) and the "number_of_lines" 
-    output is equal to 5, then this function will extract from the dataframe given the values 
-    related to the intersecion of the lines. It will aso extract 5 lines around the 
-    trace: 5 lines up and down the intersection selected for both directions: inline and crossline.
-    
-    Return:
-    cropped_dataframe : (Pandas) DataFrame. Window of study which dimensions are equal to:
-                        2 * number_of_lines_for_window + 1. Default headers as columns: 
-                        {'tracf','(CDP)utmx','(CDP)utmy','(CDP)iline','(CDP)xline'}
+    TESTING FUNCTION: WINDOW SELECTION DATAFRAME WITHOUT 
+    INPUT METHODS
     
     """
     

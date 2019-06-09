@@ -34,15 +34,26 @@ def test_step_validation():
     input_step = basemap.step_validation(1,10)
     assert (str(type(input_step)) == "<class 'int'>")
 
-# 2)test_to_test_step_compute_without_inputs(trace_dataframe,nput)
-def test_to_test_step_compute_without_inputs():
-    step = basemap.to_test_step_compute_without_inputs(trace_dataframe,1)
-    assert (step == [1,1,1])
-def test_to_test_step_compute_without_inputs_false():
-    step = basemap.to_test_step_compute_without_inputs(trace_dataframe,False)
+# 2.1)test_step_compute_without_inputs(trace_dataframe,nput)
+def test_step_computation_without_inputs():
+    step = basemap.step_computation_without_inputs(trace_dataframe,"tracf",1)
+    assert (step == 1)
+def test_step_computation_without_inputs_false():
+    step = basemap.step_computation_without_inputs(trace_dataframe,"tracf","Anything")
     assert (step == False)
 
-# 3) polygon_building(cube_dataframe)
+# 3.1) test_step_selection_without_inputs(cube_dataframe, str )
+def test_step_selection_without_inputs_false():
+    step = basemap.step_selection_without_inputs(trace_dataframe, "Something", 5)
+    assert (step == False)
+def test_step_selection_without_inputs_false2():
+    step = basemap.step_selection_without_inputs(trace_dataframe, "Something", "Somethin2")
+    assert (step == False)
+def test_step_selection_without_inputs():
+    step = basemap.step_computation_without_inputs(trace_dataframe, "tracf", 1)
+    assert (step == 1)
+
+# 4) polygon_building(cube_dataframe)
 def test_polygon_building_shape():
     polygon = basemap.polygon_building(trace_dataframe)
     assert (polygon.shape == (5,5))
@@ -58,47 +69,47 @@ def test_polygon_building_output_type():
     polygon = basemap.polygon_building(trace_dataframe)
     assert (str(type(polygon)) == "<class 'pandas.core.frame.DataFrame'>")
 
-# 4) wells_plot(wells_dataframe)
+# 5) wells_plot(wells_dataframe)
 def test_wells_plot():
     basemap_output = basemap.wells_plot(wells_dataframe)
     assert str(type(basemap_output)) == "<class 'holoviews.element.chart.Scatter'>"
 
-# 5) polygon_plot(cube_dataframe)
+# 6) polygon_plot(cube_dataframe)
 def test_polygon_plot():
     pol = basemap.polygon_plot(trace_dataframe)
     assert (str(type(pol)) == "<class 'holoviews.element.chart.Curve'>")
 
-# 6) trace_plot(cube_dataframe, t_step)
+# 7) trace_plot(cube_dataframe, t_step)
 def test_trace_plot():
     trace = basemap.trace_plot(trace_dataframe,100)
     assert (str(type(trace)) == "<class 'holoviews.element.chart.Scatter'>")
 
-# 7) inline_plot(cube_dataframe, i_step)
+# 8) inline_plot(cube_dataframe, i_step)
 def test_inline_plot ():
     inline = basemap.inline_plot(trace_dataframe,10)
     assert (str(type(inline)) == "<class 'holoviews.core.overlay.Overlay'>")
 
-# 8) xline_plot(cube_dataframe, x_step) 
+# 9) xline_plot(cube_dataframe, x_step) 
 def test_xline_plot ():
     xline = basemap.xline_plot(trace_dataframe,10)
     assert (str(type(xline)) == "<class 'holoviews.core.overlay.Overlay'>")
 
-# 9) basemap(cube_dataframe, wells_dataframe)
-def test_to_test_basemap_without_inputs():
-    xline = basemap.to_test_basemap_without_inputs(trace_dataframe, wells_dataframe,50)
-    assert (str(type(xline)) == "<class 'holoviews.core.overlay.Overlay'>")
+# 10.1) basemap_without_inputs(cube_dataframe, wells_dataframe)
+def test_basemap_without_inputs():
+    output = basemap.basemap_without_inputs(trace_dataframe, wells_dataframe,50)
+    assert (str(type(output)) == "<class 'holoviews.core.overlay.Overlay'>")
 
-# 10) test_to_test_number_of_lines_for_window(nput)
-def test_to_test_number_of_lines_for_window():
-    number_lines = basemap.test_to_test_number_of_lines_for_window(5)
+# 11) test_to_test_number_of_lines_for_window(nput)
+def test_number_of_lines_for_window_without_inputs():
+    number_lines = basemap.number_of_lines_for_window_without_inputs(5)
     assert (str(type(number_lines)) == "<class 'int'>")
-def test_to_test_number_of_lines_for_window():
-    number_lines = basemap.to_test_number_of_lines_for_window('HAHAHA')
+def test_number_of_lines_for_window_without_inputs_false():
+    number_lines = basemap.number_of_lines_for_window_without_inputs('HAHAHA')
     assert (number_lines == False)
 
-# 11) window_selection_dataframe(inline, crossline, dataframe)
-def test_to_test_window_selection_dataframe_without_inputs():
-    window = basemap.to_test_window_selection_dataframe_without_inputs(2998,2203, trace_dataframe, 15)
+# 12.1) window_selection_dataframe_without_inputs(inline, crossline, dataframe)
+def window_selection_dataframe_without_inputs():
+    window = basemap.window_selection_dataframe_without_inputs(2998,2203, trace_dataframe, 15)
     assert (window.shape == (961, 5))
 
 
