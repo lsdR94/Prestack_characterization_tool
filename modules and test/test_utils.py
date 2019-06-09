@@ -48,7 +48,20 @@ def test_wells_data_organization_false():
 def cube_file_format_file_validation():
     standard = utils.cube_file_format_file_validation(seismic_path,1)
     assert (standard == True)
-#def cube_file_format_file_validation_false()
+
+def cube_file_format_file_validation_false():
+    new_segy_path = "../data/new.sgy"
+    spec = segyio.spec()
+    spec.ilines  = [1, 2, 3, 4]
+    spec.xlines  = [11, 12, 13]
+    spec.samples = list(range(50))
+    spec.sorting = 2
+    spec.format  = 1
+    with segyio.create(new_segy_path, spec) as f:
+       
+        # here comes PYTEST!
+        new_segy = utils.cube_file_segy_format_validation(new_segy_path,1)
+    assert (new_segy == False)
 
 # 5) cube_file_step_validation(seismic_path, step)
 def test_cube_file_step_validation():
