@@ -202,7 +202,7 @@ def wells_data_organization(wells_path):
         well_dataframe = pd.read_csv(wells_path,
                             sep=" ",
                             header = None, 
-                            names= ["name","utmx","utmy","cdp_iline","cdp_xline"])
+                            names= ["name","utmx","utmy","cdp_iline","cdp_xline","depth"])
         
         well_dataframe["index"] = well_dataframe["name"]
         well_dataframe.set_index("index", inplace = True)

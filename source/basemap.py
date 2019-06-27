@@ -12,6 +12,7 @@ import panel as pn
 import hvplot.pandas
 import panel.widgets as pnw
 # Basemap functions
+default_tools = ['pan','wheel_zoom','reset']
 
 # 1) Computing function: limits of the plot
 def polygon_building(cube_dataframe):
@@ -89,7 +90,7 @@ def polygon_plot(cube_dataframe):
     
     #Plotting the boundaries of the Seismic Survey. Holoviews curve element
     pol = hv.Curve(polygon,"utmx","utmy", label = "Polygon")
-    pol.opts(line_width=2, color="black", tools = ['pan','wheel_zoom','reset'], default_tools=[])
+    pol.opts(line_width=2, color="black", tools = default_tools, default_tools=[])
     
     return (pol)
 
@@ -119,21 +120,12 @@ def wells_plot(cube_dataframe, wells_dataframe):
         A plot of the collection of wells inside the Seismic Survey.
     
     """
-    
-    #Hover tool designation    
-    hover_w = HoverTool(tooltips=[("Pozo", "@name"),
-                                  ("Utmx", "@utmx{int}"),
-                                  ("Utmy", "@utmy{int}"),
-                                  ("Inline", "@cdp_iline"),
-                                  ("Xnline","@cdp_xline")])
-    
     # Plotting Wells. Holoviews scatter element
-    wells = hv.Scatter(wells_dataframe,["utmx","utmy"],["name","cdp_iline", "cdp_xline"], 
-                       label = "Wells")
+    wells = hv.Scatter(wells_dataframe,["utmx","utmy"],["name"], label = "Wells")
     wells.opts(line_width=1,
            color="green",size = 10 ,marker = "triangle",
            padding=0.1, width=600, height=400, show_grid=True, 
-           tools=[hover_w] + ['pan','wheel_zoom','reset'], default_tools=[])
+           tools= [HoverTool(tooltips=[("Pozo", "@name")])] + ['pan','wheel_zoom','reset'], default_tools=[])
     
     # Adjusting the number of wells according to the outer polygon_building(cube_dataframe)
     l1 = cube_dataframe["utmx"].iloc[cube_dataframe["utmx"].idxmin()]
@@ -163,12 +155,6 @@ def trace_plot(cube_dataframe):
         A plot of the collection of the Seismic traces inside the Survey.
     
     """
-    
-    #Hover tool designation
-    hover_t= HoverTool(tooltips=[("Tracf", "@tracf"),
-                                 ("Inline", "@cdp_iline{int}"),
-                                 ("Crossline", "@cdp_xline{int}")])
-    
     # Less stressful to read
     df = cube_dataframe
     
@@ -176,7 +162,7 @@ def trace_plot(cube_dataframe):
     traces = hv.Scatter(df,["utmx", "utmy"],["tracf","cdp_xline","cdp_iline"], 
                         label= f"Trace (tracf)")
     traces.opts(line_width=0.2, color="grey",size = 2, height=500, width=500, 
-                tools=[hover_t] + ['pan','wheel_zoom','reset'], default_tools=[])
+                tools = default_tools, default_tools=[])
     
     return (traces)
 
@@ -211,15 +197,6 @@ def seismic_lines(cube_dataframe, iline_number, xline_number):
         1) get_basemap(cube_dataframe, wells_dataframe)
     
     """
-    
-    #Hover tool designation
-    hover_i = HoverTool(tooltips=[("Inline", "@cdp_iline"),
-                                  ("CDP","@cdp"),
-                                  ("Tracf", "@tracf")])
-    
-    hover_x = HoverTool(tooltips=[("Crossline", "@cdp_xline"),
-                                  ("CDP","@cdp"),
-                                  ("Tracf", "@tracf")])
     # Less stressful to read
     df = cube_dataframe
     
@@ -231,13 +208,13 @@ def seismic_lines(cube_dataframe, iline_number, xline_number):
     
     # Plotting the lines according to the selected step. Holoviews curve element 
     iline = hv.Curve(df[df["cdp_iline"]==iline_number], ["utmx", "utmy"],
-                          ["cdp","cdp_iline","cdp_xline","tracf"], label = f"Inline")
+                          ["tracf"], label = f"Inline")
     iline.opts(line_width=2, color="red", height=500, width=500, 
-               tools=[hover_i] + ['pan','wheel_zoom','reset'], default_tools=[])
+               tools = [HoverTool(tooltips=[("Tracf", "@tracf")])] + default_tools, default_tools=[])
     xline = hv.Curve(df[df["cdp_xline"]==xline_number], ["utmx", "utmy"],
-                          ["cdp","cdp_xline","cdp_iline","tracf"], label = f"Crossline")
+                          ["tracf"], label = f"Crossline")
     xline.opts(line_width=2, color="blue", height=500, width=500, 
-               tools=[hover_x] + ['pan','wheel_zoom','reset'], default_tools=[])
+               tools = [HoverTool(tooltips=[("Tracf", "@tracf")])] + default_tools, default_tools=[])
     
     return (iline * xline)
 
