@@ -241,8 +241,11 @@ def get_basemap(cube_dataframe, wells_dataframe, seismic_survey):
     ------
     basemap : Holviews element [Overlay]. 
         The output is the combination of the seismic survey polygon, the seismic traces, the lines along 
-        the survey and the wells inside of it. A tool to show the coordinates and the identification of 
-        each element have been implemented to the plot (Hover Tool)
+        the survey and the wells inside of it, a tool to show the coordinates and the identification of 
+        each element have been implemented to the plot (Hover Tool) and Panel's widgets listed as 
+        controls:
+            - A track bar to modify each seismic line displayed.
+            - A checkbox to display the traces around the seismic lines.
               
     See Also
     --------
