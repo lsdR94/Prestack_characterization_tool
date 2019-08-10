@@ -1,0 +1,54 @@
+
+Configuration of git
+git config --global user.name "name"
+git config --global user.email "luisdarc@gmail.com"
+
+Set the git path
+cd /path
+git init
+
+Important commands to master:
+git status : shows the files that have been modified compared to the last commit... either the new
+	     or the erased + the files that will be committed.
+
+git add : select the new data shown in the previous command to be committed in the next command
+
+git commit -m "message" : commit changes of the repo.
+
+git checkout -- . : returns/restore the repo to the last commit.
+
+git clone path : clones an existing repo through the github link
+
+gir remote -v : shows the path to where git thinks we want to push the changes. If we try to push
+		a clonned repo, then the remote will display the path of where it was clonned.
+
+git remote set-url origin "url" : set the path of our repo to commit the changes.
+
+git push origin master : to commit the changes into the github server (first push)
+
+git branch "name" : creates a new branch
+
+git branch checkout "name" : change the branch
+
+<<<<<<< HEAD
+git merge "name of the branch" : merge the branch into the original branch (master). In order to do that, the mastar branch must be highlighted
+
+
+
+
+
+=======
+yep
+>>>>>>> basemap_functions
+
+to avoid setting the username and the password everytime a push is called: 
+https://help.github.com/en/articles/caching-your-github-password-in-git
+
+
+
+
+
+
+
+
+
