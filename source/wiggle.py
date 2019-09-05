@@ -1,40 +1,33 @@
-# Dependencies
-
-# Segyio
-import segyio
-
-# Scipy
+# Math
 import numpy as np
 from scipy.interpolate import interp1d
 
-# Pandas
+# Data management
 import pandas as pd
 
-# Pyviz
+# SEGY files management
+import segyio
+
+# Visualization
 import holoviews as hv
-from holoviews import opts, dim
+from holoviews import opts
 from bokeh.models import HoverTool
+from holoviews import streams #(AVO Visualization)
 import panel as pn
-import hvplot.pandas
-import panel.widgets as pnw
 hv.extension('bokeh')
 
-
-
-def min_max_seismic_lines(df, button, iline_number, xline_number, number_of_gathers_to_display):
+def min_max_seismic_lines(df, button, iline_number, xline_number, 
+                          number_of_gathers_to_display, inline_step, crossline_step):
     
     """
-    
-    min_max_seismic_lines(df, button, iline_number, xline_number, number_of_gathers_to_display)
 
-    Makes a list of seismic lines (min/max coordinates) to be use as the argument of segyIO's GATHER 
-    function.
+    Makes a list with the seismic coordinates of the min/max lines inside of the basemap.gather_box.
     
     Arguments
     ---------
     df : (Pandas) DataFrame
         A matrix compounded by the trace header information of interest: coordinates of the 
-        Seismic traces.
+        Seismic traces inside the Basemap's gather box.
     
     button : str
         Seismic direction used to read and plot the information related to the gathers. The value comes 
@@ -59,54 +52,60 @@ def min_max_seismic_lines(df, button, iline_number, xline_number, number_of_gath
         A list compounded by the minimum and maximum values of the seismic lines coordinates to be 
         used by segyIO's GATHER function to extract the amplitude array from the SEG-Y file.
 
-    Note1:
-        The segyIO's GATHER function uses as its argument the inline and crossline coordinates to 
+    Note
+    ----
+        The segyIO's GATHER function uses as it's argument the inline and crossline coordinates to 
         store/extract the amplitudes with the SEG-Y file. The intersection of these lines results in 
         the TRACF header.
     
+    See also
+    --------
+        1) basemap.gather_box
+        2) basemap.get_basemap
+        3) wiggle_plot
+
     """ 
     
     if button == "Inline":
         iline_step = 0
-        xline_step = 1
+        xline_step = crossline_step
         xline_min = xline_number - xline_step * number_of_gathers_to_display // 2
         xline_max = xline_number + xline_step * number_of_gathers_to_display // 2   
         
         # Solving boundaries issues for inline direction
-        if xline_min < df['cdp_xline'].min():
-            xline_max = xline_max + abs(xline_min - df['cdp_xline'].min())
-            return[iline_number, iline_number, df['cdp_xline'].min(), xline_max]
+        if xline_min < df['xline'].min():
+            xline_max = xline_max + abs(xline_min - df['xline'].min())
+            return[iline_number, iline_number, df['xline'].min(), xline_max]
         
-        if xline_max > df['cdp_xline'].max():
-            xline_min = xline_min - abs(xline_max - df['cdp_xline'].max()) 
-            return[iline_number, iline_number, xline_min, df['cdp_xline'].max()]
+        if xline_max > df['xline'].max():
+            xline_min = xline_min - abs(xline_max - df['xline'].max()) 
+            return[iline_number, iline_number, xline_min, df['xline'].max()]
         
         else:
             return[iline_number, iline_number, xline_min, xline_max]
         
     
     else:
-        iline_step = 1
+        iline_step = inline_step
         xline_step = 0
         iline_min = iline_number - iline_step * number_of_gathers_to_display // 2
         iline_max = iline_number + iline_step * number_of_gathers_to_display // 2 
          
         # Solving boundaries issues for crossline direction    
-        if iline_min < df['cdp_iline'].min():
-            iline_max = iline_max + abs(iline_min - df['cdp_iline'].min())
-            return[df['cdp_iline'].min(), iline_max, xline_number, xline_number]
+        if iline_min < df['iline'].min():
+            iline_max = iline_max + abs(iline_min - df['iline'].min())
+            return[df['iline'].min(), iline_max, xline_number, xline_number]
         
-        if iline_max > df['cdp_iline'].max():
-            iline_min = iline_min - abs(iline_max - df['cdp_iline'].max()) 
-            return[iline_min, df['cdp_iline'].max(), xline_number, xline_number]
+        if iline_max > df['iline'].max():
+            iline_min = iline_min - abs(iline_max - df['iline'].max()) 
+            return[iline_min, df['iline'].max(), xline_number, xline_number]
         
         else:     
             return[iline_min, iline_max, xline_number, xline_number]
 
-def scaling_fact(list_of_gathers):
+def scaling_fact(merged_file_path):
     
     """
-    scaling_fact(list_of_gathers)
     
     Computes the maximum absolute value of the amplitudes within the SEG-Y files.
     
@@ -121,22 +120,24 @@ def scaling_fact(list_of_gathers):
         Value to be used to scale the axis related to the amplitudes, therefore these will bounded 
         between [-1,1].
 
+    See also
+    --------
+        1) utils.merging_stacks
+        2) wiggle_plot
+        3) get_wiggle
     """
     
     scaling_fac = 0
-    for file in list_of_gathers:
-        with segyio.open(file,'r') as segy:
-            something = abs(segyio.tools.collect(segy.trace[:]))   
-            if something.max() > scaling_fac:
-                scaling_fac = something.max()
+    with segyio.open(merged_file_path,"r") as segy:
+        something = abs(segyio.tools.collect(segy.trace[:]))   
+        if something.max() > scaling_fac:
+            scaling_fac = something.max()
                 
     return (float(scaling_fac))
 
-def time_axis(one_gather_file):
+def time_axis(merged_file_path):
     
     """
-    
-    time_axis(one_gather_file)
     
     Builds the time axis of the plot based on the sample interval and the number of samples
     per trace stored within the SEG-Y file.
@@ -159,7 +160,7 @@ def time_axis(one_gather_file):
     
     # Every trace has the same sample interval so as the samples per trace
     first_trace = 0
-    with segyio.open(one_gather_file,'r') as segy:     
+    with segyio.open(merged_file_path,'r') as segy:     
         # Extracting the sample interval and the amount of amplitudes from the header. Also us to s
         sample_interval = float(segy.attributes(segyio.TraceField.TRACE_SAMPLE_INTERVAL)[first_trace]/1000000)
         samples_per_trace = int(segy.attributes(segyio.TraceField.TRACE_SAMPLE_COUNT)[first_trace])
@@ -168,10 +169,10 @@ def time_axis(one_gather_file):
         
     return (time_array)
 
-def spline_storepolation (iline_number, xline_number, list_of_gathers, time_interval, angle_bet_gathers):
+def spline_storepolation (iline_number, xline_number, merged_file_path, time_interval, list_of_angles,
+                          angle_bet_gathers):
     
     """
-    spline_storepolation (iline_number, xline_number, list_of_gathers, time_interval)
     
     Makes and stores (Pandas DataFrame) a spline interpolation of amplitudes and time samples for
     a given interval.
@@ -202,7 +203,7 @@ def spline_storepolation (iline_number, xline_number, list_of_gathers, time_inte
     Return
     ------
     amp_dataframe : (Pandas) DataFrame
-        A matrix made of amplitude arrays for each angle gather loaded.
+        A matrix composed by the amplitude array of each angle gather loaded.
         
     Note:
         The amplitude array has been separated in two series: positive_amplitude and negative_amplitude 
@@ -210,6 +211,12 @@ def spline_storepolation (iline_number, xline_number, list_of_gathers, time_inte
         apply the usual polarity displayed in gathers. The result of the previous element simulates 
         matplotlib's fill_in_between function using bokeh.
     
+    See also
+    --------
+        1) basemap.get_basemap
+        2) time_axis
+        3) get_wiggle
+
     """
     
     # Initializing the dataframe and angle
@@ -217,17 +224,19 @@ def spline_storepolation (iline_number, xline_number, list_of_gathers, time_inte
     angle = angle_bet_gathers
     
     # Making the Y axis
-    t_axis = time_axis(list_of_gathers[0])
+    t_axis = time_axis(merged_file_path)
     
     #Interpolate to:
     new_time = np.arange(t_axis[0],t_axis[-1] + time_interval, time_interval)
     
     amp_dataframe["time_axis"] = new_time
+    amp_dataframe["iline"] = iline_number
+    amp_dataframe["xline"] = xline_number
     
     # Extracting the amplitude array from the SEG-Y file
-    for file in list_of_gathers:
-        with segyio.open(file,'r') as segy:
-            amp = segy.gather[iline_number, xline_number][0] # [0] because is an ndarray of a ndarray
+    for angle in list_of_angles:
+        with segyio.open(merged_file_path,"r") as segy:
+            amp = segy.gather[iline_number, xline_number, angle]
 
         # Spline interpolation
         f_spline = interp1d(t_axis, amp, kind = "cubic")
@@ -241,16 +250,13 @@ def spline_storepolation (iline_number, xline_number, list_of_gathers, time_inte
         # Separating the values of the amplitudes for Area element
         amp_dataframe.loc[amp_dataframe[f"positive_amplitude_{angle}"] < 0 , f"positive_amplitude_{angle}"] = 0
         amp_dataframe.loc[amp_dataframe[f"negative_amplitude_{angle}"] > 0 , f"negative_amplitude_{angle}"] = 0
-        
-        # Taking control of the angle related to the amplitude to store it in a dataframe
-        angle = angle + angle_bet_gathers
             
-    return (amp_dataframe.round(4))  
+    return (amp_dataframe.round(4)) 
 
-def wiggle_plot(amp_df, iline_number, xline_number, list_of_gathers, time_slice_top, angle_bet_gathers):
+def wiggle_plot(amp_df, iline_number, xline_number, merged_file_path, time_slice_top, list_of_angles,
+                angle_bet_gathers):
     
     """
-    wiggle_plot (df, list_of_gathers, iline_number, xline_number, time_slice_top)
     
     Plots the amplitude matrix into the shape of a zero phase wavelet.
     
@@ -289,20 +295,25 @@ def wiggle_plot(amp_df, iline_number, xline_number, list_of_gathers, time_slice_
             - Positive values = Blue
             - Negative values = Red
             - Null values (0) = Black
-    
+
+    See also
+    --------
+        1) scaling_fact
+        2) spline_storepolation
+        3) get_wiggle
+
     """
     
-    # Initializing the plot and the angle variable
+    # Initializing the plot
     wiggle_display = hv.Curve((0,0))
-    angle = angle_bet_gathers
 
     # Computing scale factor for the X axis
-    scale_f = scaling_fact(list_of_gathers)
+    scale_f = scaling_fact(merged_file_path)
     s_factor = 0
     xticks = [] 
     
     # making the data to plot according a scaled value
-    for file in list_of_gathers:
+    for angle in list_of_angles:
         
         amp_df[f"s_amplitude_{angle}"] = amp_df[f"amplitude_{angle}"] + s_factor
         amp_df[f"s_negative_amplitude_{angle}"] = amp_df[f"negative_amplitude_{angle}"] + s_factor
@@ -334,7 +345,6 @@ def wiggle_plot(amp_df, iline_number, xline_number, list_of_gathers, time_slice_
         
         # For next iteration
         xticks = xticks + [(s_factor, angle)]
-        angle = angle + angle_bet_gathers
         s_factor = s_factor + scale_f
         
         # Adding final customizations
@@ -348,10 +358,10 @@ def wiggle_plot(amp_df, iline_number, xline_number, list_of_gathers, time_slice_
         
     return(wiggle_display)
 
-def get_wiggle(df, iline_number, xline_number, list_of_gathers, angle_bet_gathers):
+def get_wiggle(df, iline_number, xline_number, merged_file_path, list_of_angles,
+               angle_bet_gathers, gathers_to_display, inline_step, crossline_step):
     
     """
-    get_wiggle(df, iline_number, xline_number, list_of_gathers)
     
     Plots an interactive gather for a given partial angle stacks and inline/crossline coordinates.
     
@@ -386,12 +396,12 @@ def get_wiggle(df, iline_number, xline_number, list_of_gathers, angle_bet_gather
             
     See also
     --------
-        wiggle plot functions:
-            1) min_max_seismic_lines(df, button, iline_number, xline_number, number_of_gathers_to_display)
-            2) scaling_fact(list_of_gathers)
-            3) time_axis(one_gather_file)
-            4) spline_storepolation (iline_number, xline_number, list_of_gathers, time_interval)
-            5) wiggle_plot(df, iline_number, xline_number, list_of_gathers, time_slice_top)
+        1) basemap.get_basemap
+        2) min_max_seismic_lines
+        3) scaling_fact
+        4) time_axis
+        5) spline_storepolation
+        6) wiggle_plot
 
     """
     
@@ -411,13 +421,13 @@ def get_wiggle(df, iline_number, xline_number, list_of_gathers, angle_bet_gather
     
     # Sliders
     time_slice_top = pn.widgets.IntSlider(name = "Survey's top [s]", 
-                                          start = int(time_axis(list_of_gathers[0])[0]), 
-                                          end = int(time_axis(list_of_gathers[0])[-1] - 1), 
+                                          start = int(time_axis(merged_file_path)[0]), 
+                                          end = int(time_axis(merged_file_path)[-1] - 1), 
                                           step = 1, 
                                           value = 0)
     time_slice_base = pn.widgets.IntSlider(name = "Survey's base [s]", 
-                                           start = int(time_axis(list_of_gathers[0])[0] + 1), 
-                                           end = int(time_axis(list_of_gathers[0])[-1]), 
+                                           start = int(time_axis(merged_file_path)[0] + 1), 
+                                           end = int(time_axis(merged_file_path)[-1]), 
                                            step = 1, 
                                            value = 6)
     
@@ -439,28 +449,30 @@ def get_wiggle(df, iline_number, xline_number, list_of_gathers, angle_bet_gather
     
     def gather_plot(time_slice_top, time_slice_base, sample_interval ,seismic_buttons, number_gather_display):
         
-        scale_factor = scaling_fact(list_of_gathers)
+        scale_factor = scaling_fact(merged_file_path)
         s_f = 0
 
         # Initializing dictionary for holoviews layout element
         angle_gather_dict = {}
         
-        max_min_gathers = min_max_seismic_lines(df, seismic_buttons, iline_number, xline_number, number_gather_display)
+        max_min_gathers = min_max_seismic_lines(df, seismic_buttons, iline_number, xline_number, 
+                                                number_gather_display, inline_step, crossline_step)
         
         for inline in range(max_min_gathers[0], max_min_gathers[1] + 1, 1):
             for crossline in range(max_min_gathers[2], max_min_gathers[3] + 1, 1):
 
         # Making the dataframe
                 amp_dataframe = spline_storepolation(inline, crossline, 
-                                                     list_of_gathers, sample_interval, angle_bet_gathers)
+                                                     merged_file_path, sample_interval, 
+                                                     list_of_angles, angle_bet_gathers)
 
         # Cropping the dataframe according to the time_variant variable. when t_w = 0, no crop is done
                 amp_dataframe = amp_dataframe[(amp_dataframe.time_axis >= time_slice_top) &
                                               (amp_dataframe.time_axis <= time_slice_base)]
 
                 # Plotting the wiggle from the top chosen with the slider to the previous + 1
-                gather = wiggle_plot (amp_dataframe, inline, crossline, list_of_gathers, 
-                                      time_slice_top, angle_bet_gathers)
+                gather = wiggle_plot (amp_dataframe, inline, crossline, merged_file_path, 
+                                      time_slice_top, list_of_angles, angle_bet_gathers)
 
                 # Changing some parameters of the plot: y axis label + y axis line
                 if (inline == max_min_gathers[0]) and (crossline == max_min_gathers[2]):
@@ -489,18 +501,5 @@ def get_wiggle(df, iline_number, xline_number, list_of_gathers, angle_bet_gather
                         
     return((pn.Row(widgets, gather_plot).servable()))
  
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
