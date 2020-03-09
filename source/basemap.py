@@ -111,11 +111,13 @@ def polygon_plot(seismic_dataframe):
     
     #Plotting the boundaries of the Seismic Survey. Holoviews Curve element
     pol = hv.Curve(polygon_dataframe,["utmx","utmy"], label = "Polygon")
-    pol.opts(line_width=2, color="black", tools = ['pan','wheel_zoom','reset'], default_tools=[])
+    pol.opts(line_width=2, color="black", tools = ['pan','wheel_zoom','reset'], default_tools=[],
+             xformatter = '%.0f', yformatter = '%.0f', height = 500, width = 500, padding = 0.1,
+             toolbar = 'above')
     
     return [pol, polygon_dataframe]
 
-def wells_plot(polygon_dataframe, wells_dataframe):
+def wells_plot(wells_dataframe):
     
     """
     
@@ -124,12 +126,8 @@ def wells_plot(polygon_dataframe, wells_dataframe):
     The function plots only the wells inside the Seismic Survey given, therefore every well outside the this
     will be excluded from the final output.
     
-    Arguments
-    ---------
-    polygon_dataframe : (Pandas)DataFrame
-        A matrix composed by the trace header information of interest: coordinates of the 
-        Seismic traces.
-    
+    Argument
+    --------
     wells_dataframe : (Pandas)DataFrame.
         A matrix formed by the information of each well inside the Seismic Survey.
     
@@ -144,23 +142,21 @@ def wells_plot(polygon_dataframe, wells_dataframe):
         2) polygon_plot
 
     """
-   
+    # Declaring the Hover tools (each line will use one)
+    wells_hover = HoverTool(tooltips=[("Utmx", "@utmx{(0.0)}"),
+                                      ("Utmy", "@utmy{(0.0)}"),
+                                      ("Depth", "@depth{(0)}")])
     # Plotting Wells. Holoviews Scatter element
     wells = hv.Scatter(wells_dataframe,["utmx","utmy"],
-                       ["name","cdp_iline", "cdp_xline"], 
+                       ["name","cdp_iline", "cdp_xline", "depth"], 
                        label = "Wells")
     wells.opts(line_width = 1,
-               color = "green",size = 7 ,marker = "^",
+               color = "green",size = 10 ,marker = "^",
                padding = 0.1, width=600, height=400, show_grid=True, 
-               tools = ['pan','wheel_zoom','reset'], default_tools=[])
+               tools = [wells_hover] + ['pan','wheel_zoom','reset'], default_tools=[],
+              xformatter = '%.0f', yformatter = '%.0f') 
     
-    # Adjusting the number of wells according to the outer polygon_building(cube_dataframe)
-    l1 = polygon_dataframe["utmx"].loc[polygon_dataframe["utmx"].idxmin()]
-    l2 = polygon_dataframe["utmx"].loc[polygon_dataframe["utmx"].idxmax()]
-    l3 = polygon_dataframe["utmy"].loc[polygon_dataframe["utmy"].idxmin()]
-    l4 = polygon_dataframe["utmy"].loc[polygon_dataframe["utmy"].idxmax()]
-    
-    return (wells[l1:l2,l3:l4])
+    return (wells)
 
 def seismic_lines_dataframe(polygon_dataframe):
     
@@ -304,12 +300,12 @@ def seismic_line_plot(polygon_dataframe, iline_number, xline_number):
     # Plotting the Inline. Holoviews Curve element
     iline = hv.Curve([(float(ilines[ilines["iline"] == iline_number]["utmx"]), 
                         float(ilines[ilines["iline"] == iline_number]["utmy"])),
-                       (iutmx, iutmy)])
+                       (iutmx, iutmy)], label = "I-Line")
     
     # Plotting the Crossline. Holoviews Curve element
     xline = hv.Curve([(float(xlines[xlines["xline"] == xline_number]["utmx"]), 
                         float(xlines[xlines["xline"] == xline_number]["utmy"])),
-                       (xutmx, xutmy)])
+                       (xutmx, xutmy)], label = "C-Line")
     
     # Adding the hover tool in to the plots
     iline.opts(line_width = 2, color = "red", 
@@ -433,7 +429,8 @@ def seismic_intersection_plot(polygon_dataframe, iline_number, xline_number):
     # Declaring the Hover tools (each line will use one)
     tracf_hover = HoverTool(tooltips=[("Tracf", f"{tracf_list[0]}"),
                                       ("(I/X)", f"({iline_number}/{xline_number})"),
-                                      ("(Utmx, Utmy)", "($x{(0.00)},$y{(0.00)}")])
+                                      ("(Utmx", "$x{(0.00)}"),
+                                      ("(Utmy", "$y{(0.00)}")])
 
     # Changing the attributes of the hover tool
     tracf_hover.show_arrow = False
@@ -444,7 +441,7 @@ def seismic_intersection_plot(polygon_dataframe, iline_number, xline_number):
     
     
     # Plot the intersection. Holovies Scatter element.
-    tracf_plot = hv.Scatter((tracf_list[1], tracf_list[2]))
+    tracf_plot = hv.Scatter((tracf_list[1], tracf_list[2]), label = "Intersection")
     tracf_plot.opts(size = 7, line_color = "black", line_width = 2, color = "yellow",
                tools = [tracf_hover] + ['pan','wheel_zoom','reset'], default_tools=[])
     
@@ -587,9 +584,10 @@ def gather_box_plot(gather_box_list):
     polygon_gathers = point_validation(df)
     
     # Setting hovers for the data
-    hover = HoverTool(tooltips=[("I/X", f"@iline" + "/" + f"@xline"),
-                                ("X/Y", "f@utmx" + "/" + f"@utmy"),
-                                ("Trace number", f"@tracf")])
+    hover = HoverTool(tooltips=[("tracf", f"@tracf"),
+                                ("I/X", f"@iline" + "/" + f"@xline"),
+                                ("Utmx", "@utmx{(0.0)}"),
+                                ("Utmy", "@utmy{(0.0)}")])
 
     # Changing the attributes of the hover tool
     hover.show_arrow = False
@@ -599,19 +597,25 @@ def gather_box_plot(gather_box_list):
     hover.line_policy = "interp"
     
     # Plotting the position of the gathers
-    plot_iline_gather = hv.Scatter(iline_gathers, ["utmx", "utmy"], ["tracf", "iline", "xline"]) 
-    plot_iline_gather. opts(size = 4, line_color = "black", line_width = 2, color = "red",
+    plot_iline_gather = hv.Scatter(iline_gathers, ["utmx", "utmy"], ["tracf", "iline", "xline"], 
+                                   label = "B-Traces") 
+    plot_iline_gather. opts(size = 4, line_color = "black", line_width = 2, color = "blue",
                            tools = [hover] + ['pan','wheel_zoom','reset'], default_tools=[])
-    plot_xline_gather = hv.Scatter(xline_gathers, ["utmx", "utmy"], ["tracf", "iline", "xline"])
-    plot_xline_gather. opts(size = 4, line_color = "black", line_width = 2, color = "blue",
+    
+    plot_xline_gather = hv.Scatter(xline_gathers, ["utmx", "utmy"], ["tracf", "iline", "xline"], 
+                                   label = "B-Traces")
+    plot_xline_gather.opts(size = 4, line_color = "black", line_width = 2, color = "red",
                            tools = [hover] + ['pan','wheel_zoom','reset'], default_tools=[])
     
     # Plotting the gather's cage
     polygon = hv.Curve(polygon_gathers, ["utmx","utmy"]).opts(line_width = 2, line_color = "black")
+    polygon.opts(tools = ['pan','wheel_zoom','reset'], default_tools=[])
+    
     points = hv.Scatter(polygon_gathers, ["utmx","utmy"]).opts(size = 3, color = "black")
+    points.opts(tools = ['pan','wheel_zoom','reset'], default_tools=[])
     
     #Overlay
-    overlay = polygon * points * plot_xline_gather * plot_iline_gather
+    overlay = polygon * points * plot_iline_gather * plot_xline_gather
     
     return(overlay)
 
@@ -647,7 +651,6 @@ def get_basemap(seismic_dataframe, wells_dataframe, seismic_survey, inline_step,
 
     """
     
-    
     # Widgets
     iline_number = pn.widgets.IntSlider(name = "Inline number",
                                         start = int(seismic_dataframe["iline"].min()),
@@ -676,16 +679,12 @@ def get_basemap(seismic_dataframe, wells_dataframe, seismic_survey, inline_step,
                 select_well.param.value)
     
     def basemap_plot(iline_number, xline_number, gather_display, select_well):
-        
-        if select_well !=  "None":
-            iline_number = int(well_dataframe[well_dataframe["name"] == select_well]["cdp_iline"])
-            xline_number = int(well_dataframe[well_dataframe["name"] == select_well]["cdp_xline"])
-        
+            
         # First element
         seismic_polygon, polygon_dataframe = polygon_plot(seismic_dataframe)
 
         # Second element
-        wells = wells_plot(seismic_dataframe, wells_dataframe)
+        wells = wells_plot(wells_dataframe)
         
         # Third element
         seismic_lines = seismic_line_plot(polygon_dataframe, 
@@ -703,11 +702,21 @@ def get_basemap(seismic_dataframe, wells_dataframe, seismic_survey, inline_step,
      
         # Final Overlay
         basemap = seismic_polygon * wells * seismic_lines * gathers * tracf
-
+        basemap.opts(legend_position = 'top')
+        
         return(basemap)
+    
+    def update_slider(event):
+        if select_well.value != "None":
+            iline_number.value = int(well_dataframe["cdp_iline"].loc[str(select_well.value)])
+            xline_number.value = int(well_dataframe["cdp_xline"].loc[str(select_well.value)])
+
+    select_well.param.watch(update_slider, 'value')
     
     widgets = pn.WidgetBox(f"## {seismic_survey} Basemap", iline_number, xline_number, 
                                           gather_display, select_well)
+    
+
     
     return pn.Row(widgets, basemap_plot).servable()
 

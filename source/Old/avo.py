@@ -78,7 +78,7 @@ def input_generator(gather_file, list_of_angles, gradient_path, intercept_path, 
             for xline_number in gather.xlines:
                     yield [gather_file, list_of_angles, iline_number, xline_number, index, 
                            gradient_path, intercept_path, rvalue_path, pvalue_path, stderr_path]
-                    index += 1               
+                    index += 1              
 
 def AVO_attributes_computation_2(generator_list):
     
@@ -126,8 +126,8 @@ def AVO_attributes_computation_2(generator_list):
     iline_number = generator_list[2]
     xline_number = generator_list[3]
     index = generator_list[4]
-    gradient_file = generator_list[5]
-    intercept_file = generator_list[6]
+    intercept_file = generator_list[5]
+    gradient_file = generator_list[6]
     rvalue_file = generator_list[7]
     pvalue_file = generator_list[8]
     stderr_file = generator_list[9]
@@ -248,7 +248,7 @@ def avo_storeputation(gather_file, list_of_angles, gradient_file, intercept_file
     
     if __name__ == "avo":
         p = Pool(maxtasksperchild = 1)
-        p.map(AVO_attributes_computation_2, input_args, chunksize=1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+        p.map(AVO_attributes_computation_2, input_args, chunksize=1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
 
 def attributes_organization(gradient_file, intercept_file, rvalue_file, pvalue_file, stderr_file, 
                             inline_range, crossline_range, time_window):
@@ -342,7 +342,7 @@ def attributes_organization(gradient_file, intercept_file, rvalue_file, pvalue_f
                  (pando["crossline"] >= crossline_range[0]) &
                  (pando["crossline"] <= crossline_range[1])].reset_index(drop=True)
 
-def crossplot(x_column, y_column, dataframe, scale_select_value, alpha):
+def crossplot(x_column, y_column, dataframe):
     
     """
     
@@ -379,19 +379,13 @@ def crossplot(x_column, y_column, dataframe, scale_select_value, alpha):
     # Font size for plots
     f_size = {'ticks': '10pt', 'title': '20pt', 'ylabel': '15px', 'xlabel': '15px'}
     
-    # Scale for the crossplot
-    levels = np.linspace(dataframe[scale_select_value].min(),
-                         dataframe[scale_select_value].max(), 100,
-                         endpoint = True).tolist()
-
     # Preparing the data's plot
-    data = hv.Points(dataframe, [x_column, y_column], vdims = scale_select_value)
-    data.opts(size = 3, width = 600, height = 600, padding = 0.01,
+    data = hv.Points(dataframe, [x_column, y_column])
+    data.opts(color = "blue", size = 5, width = 600, height = 400, padding = 0.01,
               title = f"{x_column} vs {y_column}",fontsize = f_size,
               active_tools = ["box_select"],
               toolbar='above',
-              framewise = True, show_grid = True,
-              color = scale_select_value, color_levels = levels, cmap = "fire", colorbar = True)
+              framewise = True, show_grid = True)
     
     # Axis of plot
     x_axis = hv.Curve([(0,dataframe[y_column].min()), (0,dataframe[y_column].max())])
@@ -406,7 +400,7 @@ def crossplot(x_column, y_column, dataframe, scale_select_value, alpha):
     def selected_info(index):
         hc = dataframe.iloc[index]
         plot = hv.Scatter(hc, ["utmx","utmy"])
-        plot.opts(color = "red", size = 5, width = 600, height = 600, padding = 0.1, 
+        plot.opts(color = "red", size = 5, width = 600, height = 400, padding = 0.1, 
                   title = f"Position of the selected traces",fontsize = f_size, 
                   xformatter = "%.1f", yformatter = "%.1f",
                   toolbar = 'above',
@@ -420,10 +414,7 @@ def crossplot(x_column, y_column, dataframe, scale_select_value, alpha):
          
     # Combine points and DynamicMap
     layout = ((data * x_axis * y_axis) + dynamic_map).opts(merge_tools=False)
-    
-    # Line Display
-    
-    
+
     # DEACTIVATE SOME USELESS TOOLTIPS!!!
     return (layout)
 
@@ -483,7 +474,7 @@ def plotly(dframe, dataframe):
                                                              backend = "plotly")
     hc_position = hv.Scatter3D((dframe["inline"],
                                 dframe["crossline"],
-                                dframe["time_slice"])).opts(cmap = 'reds', color = 'z', size=5,
+                                dframe["time_slice"])).opts(cmap='reds', color='z', size=5,
                                                              backend = "plotly")
     overlay = cube * hc_position
     return overlay.opts(title = "Selected traces: 3D Visualization",
@@ -493,126 +484,7 @@ def plotly(dframe, dataframe):
                         show_grid = True, show_legend = True, invert_zaxis = True,
                         backend = "plotly")
 
-def line_dataframe(button, merged_file_path, iline_number, xline_number, time_window, 
-                   time_interval, list_of_angles):
-    
-    with segyio.open(merged_file_path, "r") as f:
-    
-        # Initializing the dataframe and angle
-        amp_df = pd.DataFrame([])
-
-        # Making the Y axis
-        t_axis = time_axis(merged_file_path)
-
-        #Interpolate to:
-        new_time = np.arange(t_axis[0],t_axis[-1] + time_interval, time_interval)
-        amp_df["time_axis"] = new_time
-        amp_df["seismic line"] = button
-        amp_df["iline"] = iline_number
-        amp_df["xline"] = xline_number
-
-        # Trace array
-        for angle in list_of_angles:
-
-            # Making two more series: Negative amplitude and positive amplitude
-            amp_df[f"amplitude{angle}"] = f.gather[iline_number,xline_number, angle]
-            amp_df[f"positive_amplitude{angle}"] = f.gather[iline_number,xline_number, angle]
-            amp_df[f"negative_amplitude{angle}"] = f.gather[iline_number,xline_number, angle]
-
-            # Separating the values of the amplitudes for Area element
-            amp_df.loc[amp_df[f"positive_amplitude{angle}"] < 0 , f"positive_amplitude{angle}"] = 0
-            amp_df.loc[amp_df[f"negative_amplitude{angle}"] > 0 , f"negative_amplitude{angle}"] = 0
-           
-    return (amp_df[(amp_df.time_axis >= time_window[0]) &
-                          (amp_df.time_axis <= time_window[1])].round(4))
-
-def line_visualization(button, merged_file_path, iline_number, xline_number, iline_range, xline_range, 
-              time_window,time_interval, list_of_angles):
-    
-    with segyio.open(merged_stacks, "r") as f:
-               
-        if button == "Inline":
-            iline_range = [iline_number]
-            xline_range = np.arange(xline_range[0], xline_range[1]+1)
-            
-        else:
-            iline_range = np.arange(iline_range[0], iline_range[1]+1)
-            xline_range = [xline_number]
-        
-        # Computing scale factor for the X axis
-        scale_f = scaling_fact(merged_file_path)
-        s_factor = 0
-        xticks = []
-        
-        for iline in iline_range:
-            for xline in xline_range:
-                amp_df = line_dataframe(button, merged_file_path, iline, xline, time_window,
-                                        time_interval, list_of_angles)
-                for angle in list_of_angles:
-                                 
-                    amp_df[f"s_amplitude{angle}"] = amp_df[f"amplitude{angle}"] + s_factor
-                    amp_df[f"s_negative_amplitude{angle}"] = amp_df[f"negative_amplitude{angle}"] + s_factor
-                    amp_df[f"s_positive_amplitude{angle}"] = amp_df[f"positive_amplitude{angle}"] + s_factor
-                    
-                    # Hover designation
-                    hover_w= HoverTool(tooltips=[('Time', '@time_axis'),
-                                                 ('Amplitude', f"@amplitude{angle}")])
-                    # Plotting the wiggle
-                    wiggle = hv.Curve(amp_df, ["time_axis", f"s_amplitude{angle}"], [f"amplitude{angle}"],
-                                      label = "W")
-                    wiggle.opts(color = "black", line_width = 2, tools = [hover_w])
-
-                    # Making the area plot more comfortable
-                    x = amp_df["time_axis"]
-                    y = s_factor
-                    y2 = amp_df[f"s_negative_amplitude{angle}"]
-                    y3 = amp_df[f"s_positive_amplitude{angle}"]
-                    
-                    # Fill in between: Holoviews Element
-                    negative = hv.Area((x, y, y2), vdims=['y', 'y2'], 
-                                       label = "-").opts(color = "red", line_width = 0)
-                    positive = hv.Area((x, y, y3), vdims=['y', 'y3'],
-                                       label = "+").opts(color = "blue", line_width = 0)        
-                    fill_in_between = negative * positive
-
-                    # Overlying the colored areas +  the zero phase wavelet
-                    if s_factor == 0:
-                        wiggle_display = wiggle * fill_in_between
-                    else:
-                        wiggle_display = wiggle_display * wiggle * fill_in_between
-
-                    # For next iteration
-                    s_factor = s_factor + scale_f
-            
-        # xticks    
-        x = np.arange(0, s_factor, scale_f * len(list_of_angles))
-        if button == "Inline":
-            for line in range(len(xline_range)):
-                nlines = len(xline_range)
-                xticks += [(x[line],xline_range[line])]
-                line = iline_number
-        else:
-            for line in range(len(iline_range)):
-                nlines = len(iline_range)
-                xticks += [(x[line],iline_range[line])]
-                line = xline_number
-            
-            
-        wiggle_display.opts(height = 600, width = 500 + (10*nlines), padding = 0.01,
-                            ylabel = f"{button} {line}", xlabel = "Time [ms]",
-                            show_grid = True, xaxis = "top", invert_axes = True, invert_yaxis=True,
-                            title = f"Position of the selected traces",
-                            xticks = xticks,
-                            fontsize = {'ticks': '10pt', 'title': '20pt', 'ylabel': '15px', 'xlabel': '15px'}, 
-                            xformatter = "%.0f", yformatter = "%.0f",
-                            toolbar = 'above', framewise = True,
-                            legend_position = 'top')
-        
-    return wiggle_display
-
-def avo_visualization(seismic_dataframe, merged_file_path,
-                      gradient_file, intercept_file, rvalue_file, pvalue_file, stderr_file, 
-                     list_of_angles):
+def avo_visualization(gradient_file, intercept_file, rvalue_file, pvalue_file, stderr_file):
     
     """
 
@@ -650,23 +522,21 @@ def avo_visualization(seismic_dataframe, merged_file_path,
 
     """
 
-    df = pd.DataFrame(columns = ["inline","crossline","time_slice",
+    df = pd.DataFrame(columns = ["inline","crossline",
                                  "gradient","intercept","rvalue","pvalue","sdeviation"])
     # Window Selection
     inst = pn.widgets.StaticText(name = "Window to work with", value = "")
     
     iline_range = pn.widgets.IntRangeSlider(name = 'Inline range',
-                                            start = int(seismic_dataframe["iline"].min()), 
-                                            end = int(seismic_dataframe["iline"].max()), 
-                                            value = (int(seismic_dataframe["iline"].min()), 
-                                                     int(seismic_dataframe["iline"].min())+1), 
+                                            start = 1189, 
+                                            end = 1199, 
+                                            value = (1189, 1199), 
                                             step = 1)
     
     xline_range = pn.widgets.IntRangeSlider(name = 'Crossline range',
-                                            start = int(seismic_dataframe["xline"].min()), 
-                                            end = int(seismic_dataframe["xline"].max()), 
-                                            value = (int(seismic_dataframe["xline"].min()), 
-                                                     int(seismic_dataframe["xline"].min())+1), 
+                                            start = 2508, 
+                                            end = 2518, 
+                                            value = (2508, 2518), 
                                             step = 1)
     
     # Time slice selection
@@ -675,72 +545,41 @@ def avo_visualization(seismic_dataframe, merged_file_path,
                                              end = 6000, 
                                              value = (2750, 3000), 
                                              step = 250)
-    # alpha slice selection
-    alpha = pn.widgets.FloatSlider(name = 'Transparency slider',
-                                 start = 0, 
-                                 end = 1, 
-                                 value = 1, 
-                                 step = 0.1)
     
     # Crossplot parameters
-    axis = pn.widgets.StaticText(name = "Crossplots", value = "")
+    parameters = pn.widgets.StaticText(name = "Crossplots paramaters", value = "")
     x_axis = pn.widgets.Select(name = "X axis", 
                               options = list(df.columns),
-                              value = "intercept")
+                              value = "gradient")
     y_axis = pn.widgets.Select(name = "Y axis", 
                               options = list(df.columns),
-                              value = "gradient")
-       
-    # Scale selection
-    select_scale = pn.widgets.Select(name = "Points Scale", 
-                                    options = list(df.columns),
-                                    value = "sdeviation")
+                              value = "intercept")
     
-    inst2 = pn.widgets.StaticText(name = "Seismic line", value = "")
-    
-    # Buttons
-    line_button = pn.widgets.RadioButtonGroup(name='Radio Button Group', 
-                                              options=['Inline', 'Crossline'], button_type='success')
-    
-    # Line entry
-    iline_input = pn.widgets.TextInput(name = 'Inline number',
-                                       value= str(iline_range.value[0]))
-    xline_input = pn.widgets.TextInput(name = 'Crossline number',
-                                       value= str(xline_range.value[0]))
-    
-    # display line
-    checkbox = pn.widgets.Checkbox(name = "Display lines")
+    # Crossplot checkbox
+    check_box1 = pn.widgets.Checkbox(name = " 3D visualization the selected traces")
 
-    
+       
     # Decorator to mess up with the API
     @pn.depends(iline_range.param.value, xline_range.param.value,
                 slice_slider.param.value,
                 x_axis.param.value, y_axis.param.value,
-                select_scale.param.value, alpha.param.value,
-                line_button.param.value,
-                iline_input.param.value, xline_input.param.value,
-                checkbox.param.value)
+                check_box1.param.value)
     
     def avo_stuff(iline_range, xline_range, slice_slider,
-                  x_axis, y_axis, select_scale, alpha, line_button, iline_input, xline_input, 
-                  checkbox):
+                  x_axis, y_axis, check_box1):
         
         attribute_dataframe = attributes_organization(gradient_file, intercept_file, 
                                                rvalue_file, pvalue_file, stderr_file, 
                                                iline_range, xline_range,
                                                slice_slider)
-        # Crossplot stuff
-        crossplots = crossplot(x_axis, y_axis, attribute_dataframe, select_scale, alpha)
         
-        if checkbox:
-            # Line visualization
-            crossplots += line_visualization(line_button, merged_file_path, 
-                                              int(iline_input), int(xline_input),
-                                              iline_range, xline_range,slice_slider, 4,
-                                              list_of_angles)
-
-        return(crossplots).opts(merge_tools=False)
-
+        crossplots = crossplot(x_axis, y_axis, attribute_dataframe)
+        
+        if check_box1:
+            dframe = crossplots[1].dframe()
+            crossplots = hv.Curve((0,0))
+            
+        return(crossplots)
     
     w_width = 250
     w_height = 50
@@ -749,18 +588,18 @@ def avo_visualization(seismic_dataframe, merged_file_path,
     row3 = pn.Row(xline_range, height = w_height, width = w_width)
     row4 = pn.Row(slice_slider, height = w_height, width = w_width)
     row5 = pn.Row(x_axis, y_axis, height = w_height, width = w_width)
-    row6 = pn.Column(select_scale, alpha, inst2, checkbox, line_button, width = w_width)
-    row8 = pn.Row(iline_input, xline_input, height = w_height, width = w_width)
     
     widgets = pn.WidgetBox(f"## AVO visualization", row1,
                                       row2,
                                       row3,
                                       row4,
-                                      axis,
+                                      pn.Spacer(height = 10),
+                                      parameters,
                                       row5,
-                                      row6,
-                                      row8)
+                                      pn.Spacer(height = 10),
+                                      check_box1)
                        
     return pn.Row(widgets, avo_stuff).servable()
+
 
 

@@ -153,7 +153,7 @@ def merging_stacks(list_of_gathers, merged_file_path, list_of_angles):
     offsts = np.array(list_of_angles)
 
     # Initializing the stacks
-    with segyio.open(list_of_gathers[0]) as f, segyio.open(list_of_gathers[1]) as g, segyio.open(list_of_gathers[2]) as h:
+    with segyio.open(list_of_gathers[0]) as f:
         
         # Spec function to build the new segy
         spec = segyio.spec()
@@ -189,70 +189,20 @@ def merging_stacks(list_of_gathers, merged_file_path, list_of_angles):
                                                  segyio.su.cdpy   : f.header[stack_index][185],
                                                  segyio.su.iline  : il,  # 189
                                                  segyio.su.xline  : xl}  # 193
-                        if offset == list_of_angles[0]:
-                            stack = f # near
-                        if offset == list_of_angles[1]:
-                            stack = g # mid
-                        if offset == list_of_angles[2]:
-                            stack = h # far                   
                         
-                        # Copying the amplitudes from each stack
-                        s.trace[merge_index] = stack.trace[stack_index]
+                        # Extracts the index of the angle which match with the file's index
+                        file_index = list_of_angles.index(offset)
+                        
+                        # Openning the file asociated with the angle in offset
+                        with segyio.open(list_of_gathers[file_index], "r") as stack:   
+                            
+                            # Copying the amplitudes from each stack
+                            s.trace[merge_index] = stack.trace[stack_index]
                         
                         merge_index += 1
                     stack_index += 1
                 
     return (f"Successful merge. New SEG-Y file path: {merged_file_path}")
-
-def wells_data_organization(wells_path):
-    
-    """
-
-    Builds a DataFrame using the well's information within the Seismic Survey.
-    
-    The function builds a (Pandas) DataFrame based on the information contained by the given text file
-    related to wells. The data inside the file must be structured in a very specific way in order to be
-    readen by the function. Each of the items listed below have to be separated by one space: 
-        "well name" "utmx coordinate" "utmy coordinate" "inline coordinate" "xline coordinate" "depth"
-    
-    
-    Argument
-    --------
-    wells_path : str
-        Path where the well information file is located. Default path: '../data/wells_info.txt'
-    
-    Return
-    ------
-    well_dataframe : (Pandas) DataFrame. 
-        A matrix compounded by the information related to each well. The information distribution is 
-        controlled by the following columns:
-            - name: well's name
-            - cdp_iline: inline coordinate.
-            - cdp_xline: crossline coordinate.
-            - utmx: horizontal axis of the Universal Transversal Mercator coordinate system.
-            - utmy: vertical axis of the Universal Transversal Mercator coordinate system.
-            - depth: depth reached by the well.
-    
-    str
-        If the previous validations (one at least) are False the output will be a Warning specifiying 
-        why the function can't work with the data.
-        
-    """   
-     
-    if file_validation(wells_path) == True:
-    
-        well_dataframe = pd.read_csv(wells_path,
-                            sep=" ",
-                            header = None, 
-                            names= ["name","cdp_iline","cdp_xline","utmx","utmy", "depth"])
-        
-        well_dataframe["index"] = well_dataframe["name"]
-        well_dataframe.set_index("index", inplace = True)
-        
-        return(well_dataframe)
-    
-    else:
-        return(file_validation(wells_path))
 
 def cube_data_organization(file_path):
     
@@ -268,7 +218,7 @@ def cube_data_organization(file_path):
     Return
     ------
     trace_coordinates : (Pandas) DataFrame
-        A matrix compounded by the coordinates of each trace. The information 
+        A matrix compounded by the coordinates of the seismic survey's corners. The information 
         distribution is controlled by the following columns:
             - iline: inline coordinate.
             - xline: crossline coordinate.
@@ -320,7 +270,66 @@ def cube_data_organization(file_path):
             return df
 
     else:
-        return(file_validation(file_path))
+        print(file_validation(file_path))
+        return()
+
+def wells_data_organization(wells_path, seismic_dataframe):
+    
+    """
+
+    Builds a DataFrame using the well's information within the Seismic Survey.
+    
+    The function builds a (Pandas) DataFrame based on the information contained by the given text file
+    related to wells. The data inside the file must be structured in a very specific way in order to be
+    readen by the function. Each of the items listed below have to be separated by one space: 
+        "well name" "utmx coordinate" "utmy coordinate" "inline coordinate" "xline coordinate" "depth"
+    
+    
+    Arguments
+    ---------
+    wells_path : str
+        Path where the well information file is located. Default path: '../data/wells_info.txt'
+        
+    seismic_dataframe : (Pandas) DataFrame
+        A matrix compounded by the coordinates of the seismic survey's corners.
+    
+    Return
+    ------
+    well_dataframe : (Pandas) DataFrame. 
+        A matrix compounded by the information related to each well. The information distribution is 
+        controlled by the following columns:
+            - name: well's name
+            - cdp_iline: inline coordinate.
+            - cdp_xline: crossline coordinate.
+            - utmx: horizontal axis of the Universal Transversal Mercator coordinate system.
+            - utmy: vertical axis of the Universal Transversal Mercator coordinate system.
+            - depth: depth reached by the well.
+    
+    str
+        If the previous validations (one at least) are False the output will be a Warning specifiying 
+        why the function can't work with the data.
+        
+    """   
+     
+    if file_validation(wells_path) == True:
+    
+        well_dataframe = pd.read_csv(wells_path,
+                            sep=" ",
+                            header = None, 
+                            names= ["name","cdp_iline","cdp_xline","utmx","utmy", "depth"])
+        
+        well_dataframe["index"] = well_dataframe["name"]
+        well_dataframe.set_index("index", inplace = True)
+        
+        # Adjusting the dataframe according to the survey
+        return(well_dataframe[(well_dataframe.cdp_iline >= seismic_dataframe.iline.min()) &
+                                        (well_dataframe.cdp_iline <= seismic_dataframe.iline.max()) &
+                                        (well_dataframe.cdp_xline >= seismic_dataframe.xline.min()) &
+                                        (well_dataframe.cdp_xline <= seismic_dataframe.xline.max())])
+    
+    else:
+        print(file_validation(wells_path))
+        return()
 
 def avo_storing_files(list_of_gathers, gradient_path, intercept_path, rvalue_path, pvalue_path, stderr_path): 
     
@@ -394,10 +403,6 @@ def avo_storing_files(list_of_gathers, gradient_path, intercept_path, rvalue_pat
     print(f"Successful construction. Standard Deviation path: ({stderr_path})")
 
     return ()
-
-
-
-
 
 
 

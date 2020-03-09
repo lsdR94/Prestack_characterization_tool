@@ -65,14 +65,43 @@ def min_max_seismic_lines(df, button, iline_number, xline_number,
         3) wiggle_plot
 
     """ 
-    iline_min, iline_max = df["iline"].min(), df["iline"].max()
-    xline_min, xline_max = df["xline"].min(), df["xline"].max()
     
     if button == "Inline":
-        return[iline_number, iline_number, xline_min, xline_max]
+        iline_step = 0
+        xline_step = crossline_step
+        xline_min = xline_number - xline_step * number_of_gathers_to_display // 2
+        xline_max = xline_number + xline_step * number_of_gathers_to_display // 2   
+        
+        # Solving boundaries issues for inline direction
+        if xline_min < df['xline'].min():
+            xline_max = xline_max + abs(xline_min - df['xline'].min())
+            return[iline_number, iline_number, df['xline'].min(), xline_max]
+        
+        if xline_max > df['xline'].max():
+            xline_min = xline_min - abs(xline_max - df['xline'].max()) 
+            return[iline_number, iline_number, xline_min, df['xline'].max()]
+        
+        else:
+            return[iline_number, iline_number, xline_min, xline_max]
+        
     
     else:
-        return[iline_min, iline_max, xline_number, xline_number]
+        iline_step = inline_step
+        xline_step = 0
+        iline_min = iline_number - iline_step * number_of_gathers_to_display // 2
+        iline_max = iline_number + iline_step * number_of_gathers_to_display // 2 
+         
+        # Solving boundaries issues for crossline direction    
+        if iline_min < df['iline'].min():
+            iline_max = iline_max + abs(iline_min - df['iline'].min())
+            return[df['iline'].min(), iline_max, xline_number, xline_number]
+        
+        if iline_max > df['iline'].max():
+            iline_min = iline_min - abs(iline_max - df['iline'].max()) 
+            return[iline_min, df['iline'].max(), xline_number, xline_number]
+        
+        else:     
+            return[iline_min, iline_max, xline_number, xline_number]
 
 def scaling_fact(merged_file_path):
     
@@ -133,14 +162,14 @@ def time_axis(merged_file_path):
     first_trace = 0
     with segyio.open(merged_file_path,'r') as segy:     
         # Extracting the sample interval and the amount of amplitudes from the header. Also us to s
-        sample_interval = float(segy.attributes(segyio.TraceField.TRACE_SAMPLE_INTERVAL)[first_trace]/1000)
+        sample_interval = float(segy.attributes(segyio.TraceField.TRACE_SAMPLE_INTERVAL)[first_trace]/1000000)
         samples_per_trace = int(segy.attributes(segyio.TraceField.TRACE_SAMPLE_COUNT)[first_trace])
         
-        time_array = np.arange(first_trace, sample_interval * samples_per_trace, sample_interval)
+        time_array = np.arange(first_trace,sample_interval * samples_per_trace,sample_interval)
         
     return (time_array)
 
-def spline_storepolation(iline_number, xline_number, merged_file_path, time_interval, list_of_angles,
+def spline_storepolation (iline_number, xline_number, merged_file_path, time_interval, list_of_angles,
                           angle_bet_gathers):
     
     """
@@ -198,7 +227,7 @@ def spline_storepolation(iline_number, xline_number, merged_file_path, time_inte
     t_axis = time_axis(merged_file_path)
     
     #Interpolate to:
-    new_time = np.arange(t_axis[0], t_axis[-1] + time_interval, time_interval)
+    new_time = np.arange(t_axis[0],t_axis[-1] + time_interval, time_interval)
     
     amp_dataframe["time_axis"] = new_time
     amp_dataframe["iline"] = iline_number
@@ -297,8 +326,7 @@ def wiggle_plot(amp_df, iline_number, xline_number, merged_file_path, time_slice
          
         # Plotting the wiggle
         wiggle = hv.Curve(amp_df, ["time_axis", f"s_amplitude_{angle}"], 
-                              [f"amplitude_{angle}"],
-                          label = "W")
+                              [f"amplitude_{angle}"])
         wiggle.opts(color = "black", line_width = 2, tools = [hover_w])
           
         # Making the area plot more comfortable
@@ -308,10 +336,8 @@ def wiggle_plot(amp_df, iline_number, xline_number, merged_file_path, time_slice
         y3 = amp_df[f"s_positive_amplitude_{angle}"]
         
         # Fill in between: Holoviews Element
-        negative = hv.Area((x, y, y2), vdims=['y', 'y2'], 
-                           label = "-").opts(color = "red", line_width = 0)
-        positive = hv.Area((x, y, y3), vdims=['y', 'y3'],
-                           label = "+").opts(color = "blue", line_width = 0)        
+        negative = hv.Area((x, y, y2), vdims=['y', 'y2']).opts(color = "red", line_width = 0)
+        positive = hv.Area((x, y, y3), vdims=['y', 'y3']).opts(color = "blue", line_width = 0)        
         fill_in_between = negative * positive
         
         # Overlying the colored areas +  the zero phase wavelet
@@ -325,11 +351,10 @@ def wiggle_plot(amp_df, iline_number, xline_number, merged_file_path, time_slice
         wiggle_display.opts(height = 500, width = 150, padding = 0.1,
                             show_grid = True, xaxis = "top", invert_axes = True, invert_yaxis=True,
                             fontsize={"title": 10, "labels": 14, "xticks": 8, "yticks": 8},
-                            ylabel = f"{iline_number}/{xline_number}", xlabel = "Time [ms]",
-                            xformatter = "%.0f", yformatter = "%.0f", xticks = xticks,
-                            xlim = (time_slice_top, time_slice_top + 500),
-                            active_tools = ["pan", "wheel_zoom"],
-                            legend_position = 'top')
+                            ylabel = f"{iline_number}/{xline_number}", xlabel = "Time [s]",
+                            xformatter = "%f", yformatter = "%.1f", xticks = xticks,
+                            xlim = (time_slice_top, time_slice_top + 1),
+                            active_tools = ["pan", "wheel_zoom"])
         
     return(wiggle_display)
 
@@ -395,23 +420,34 @@ def get_wiggle(df, iline_number, xline_number, merged_file_path, list_of_angles,
     
     
     # Sliders
-    time_window = pn.widgets.IntRangeSlider(name = 'Time window [ms]',
-                                            start = 0, 
-                                            end = 6000, 
-                                            value = (0, 6000), 
-                                            step = 500)
+    time_slice_top = pn.widgets.IntSlider(name = "Survey's top [s]", 
+                                          start = int(time_axis(merged_file_path)[0]), 
+                                          end = int(time_axis(merged_file_path)[-1] - 1), 
+                                          step = 1, 
+                                          value = 0)
+    time_slice_base = pn.widgets.IntSlider(name = "Survey's base [s]", 
+                                           start = int(time_axis(merged_file_path)[0] + 1), 
+                                           end = int(time_axis(merged_file_path)[-1]), 
+                                           step = 1, 
+                                           value = 6)
     
-    sample_interval = pn.widgets.IntSlider(name = "Sample interval [ms]", 
-                                            start = 1, 
-                                            end = 4, 
-                                            step = 1, 
-                                            value = 4)
-
+    sample_interval = pn.widgets.FloatSlider(name = "Sample interval [s]", 
+                                            start = 0.001, 
+                                            end = 0.004, 
+                                            step = 0.001, 
+                                            value = 0.004)
+    
+    number_gather_display = pn.widgets.IntSlider(name = "Extra gathers to display", 
+                                                 start = 2, 
+                                                 end = 6, 
+                                                 step = 2, 
+                                                 value = 2)
+       
     # Decorator to mess up with the API
-    @pn.depends(time_window.param.value,
-                sample_interval.param.value,seismic_buttons.param.value)
+    @pn.depends(time_slice_top.param.value, time_slice_base.param.value,
+                sample_interval.param.value,seismic_buttons.param.value, number_gather_display.param.value)
     
-    def gather_plot(time_window, sample_interval ,seismic_buttons):
+    def gather_plot(time_slice_top, time_slice_base, sample_interval ,seismic_buttons, number_gather_display):
         
         scale_factor = scaling_fact(merged_file_path)
         s_f = 0
@@ -420,7 +456,7 @@ def get_wiggle(df, iline_number, xline_number, merged_file_path, list_of_angles,
         angle_gather_dict = {}
         
         max_min_gathers = min_max_seismic_lines(df, seismic_buttons, iline_number, xline_number, 
-                                                gathers_to_display, inline_step, crossline_step)
+                                                number_gather_display, inline_step, crossline_step)
         
         for inline in range(max_min_gathers[0], max_min_gathers[1] + 1, 1):
             for crossline in range(max_min_gathers[2], max_min_gathers[3] + 1, 1):
@@ -431,12 +467,12 @@ def get_wiggle(df, iline_number, xline_number, merged_file_path, list_of_angles,
                                                      list_of_angles, angle_bet_gathers)
 
         # Cropping the dataframe according to the time_variant variable. when t_w = 0, no crop is done
-                amp_dataframe = amp_dataframe[(amp_dataframe.time_axis >= time_window[0]) &
-                                              (amp_dataframe.time_axis <= time_window[1])]
+                amp_dataframe = amp_dataframe[(amp_dataframe.time_axis >= time_slice_top) &
+                                              (amp_dataframe.time_axis <= time_slice_base)]
 
                 # Plotting the wiggle from the top chosen with the slider to the previous + 1
                 gather = wiggle_plot (amp_dataframe, inline, crossline, merged_file_path, 
-                                      time_window[0], list_of_angles, angle_bet_gathers)
+                                      time_slice_top, list_of_angles, angle_bet_gathers)
 
                 # Changing some parameters of the plot: y axis label + y axis line
                 if (inline == max_min_gathers[0]) and (crossline == max_min_gathers[2]):
@@ -453,11 +489,14 @@ def get_wiggle(df, iline_number, xline_number, merged_file_path, list_of_angles,
     widgets = pn.WidgetBox(f"## Gathers display Panel", display_iline_number,
                                                              display_xline_number, 
                                                              pn.Spacer(height = 10),
+                                                             number_gather_display,
+                                                             pn.Spacer(height = 10),
                                                              gather_direction,
                                                              seismic_buttons,
                                                              pn.Spacer(height = 10),
                                                              display_controls,
-                                                             time_window,
+                                                             time_slice_top,
+                                                             time_slice_base,
                                                              sample_interval)
                         
     return((pn.Row(widgets, gather_plot).servable()))
