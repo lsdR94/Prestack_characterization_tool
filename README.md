@@ -4,8 +4,7 @@
 ### Author: 		luisdaniel Rivera.
 ### 	  		luisdarc@gmail.com
 # 		    
-### Industrial tutor:	Rafael Pinto	 
-### Academic tutor :	Mariano Arnaiz
+### Co Auhtor:	Rafael Pinto	 
 
 
 
