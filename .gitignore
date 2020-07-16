@@ -5,6 +5,9 @@
 # to tell git to exclude these files from version control.
 # In this manner we don't pollute the shared .gitignore file
 Git_Tutorial
+notebooks/Prestack_Characterization_Tool[04-11-2019T].ipynb
+notebooks/Prestack_Characterization_Tool[12-10-2019].ipynb
+notebooks/Prestack_Characterization_Tool[12-10-2019T].ipynb
 Build_32_bits
 Workflow/
 source_RP/
