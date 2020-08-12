@@ -1,8 +1,0 @@
-python
-ipykernel
-numpy
-matplotlib
-pandas
-segyio
-bokeh
-holoviews
